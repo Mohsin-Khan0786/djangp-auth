@@ -22,4 +22,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('account.urls')), 
     path('crud/', include('crud.urls')),
+    path('pract/',include('middlewareproj.urls'))
 ]

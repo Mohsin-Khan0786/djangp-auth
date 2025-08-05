@@ -11,6 +11,7 @@ logger = logging.getLogger('core.middleware')
 class LoggingMiddleware(MiddlewareMixin):
     def process_request(self, request):
         ip = request.META.get('REMOTE_ADDR')
+
         now = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
         logger.info(f"[REQUEST] IP: {ip} at {now}")
 
@@ -21,34 +22,44 @@ class LoggingMiddleware(MiddlewareMixin):
 class RateLimitMiddleware(MiddlewareMixin):
     def process_request(self, request):
         ip = request.META.get('REMOTE_ADDR')
-        user=request.user
-        if request.path .startswith('/admin/'):
+        path = request.path
+
+
+  
+        if request.path.startswith('/admin/'):
             return None
 
-        now = timezone.now()      
-       
+        user = request.user
+        now = timezone.now()
+        limit = 20
+
+        if user.is_authenticated and user.role != RoleChoices.GUEST:
+
+            role_limits = {
+                RoleChoices.GOLD: 10,
+                RoleChoices.SILVER: 5,
+                RoleChoices.BRONZE: 3,
+            }
+            limit = role_limits.get(user.role)
+
         try:
-            # import pdb
-            # pdb.set_trace()
             blocked_ip = BlockedIP.objects.get(ip_address=ip)
             if now - blocked_ip.updated > timedelta(minutes=1):
                 blocked_ip.count = 1
+            
             else:
                 blocked_ip.count += 1
 
             blocked_ip.save()
+            print(limit)
 
-            if blocked_ip.count >= 5:
+            if blocked_ip.count >= limit:
                 return JsonResponse(
-                    {"error": "Rate Limit Exceeded.  Try again after 1 mins "},
+                    {"error": f"Rate Limit Exceeded ({limit}/min). Try again after 1 minute."},
                     status=429
                 )
-            else:
-                return JsonResponse(
-                    {"success": "HELOOOOOOOOOO"},
-                    status=200
-                )
-        except BlockedIP.DoesNotExist:
-            BlockedIP.objects.create(ip_address=ip)
 
-        return None 
+        except BlockedIP.DoesNotExist:
+            BlockedIP.objects.create(ip_address=ip, count=1)
+
+        return None
