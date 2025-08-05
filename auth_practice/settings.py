@@ -40,7 +40,44 @@ INSTALLED_APPS = [
     'account',
     'crud',
     'academics',
+    'core',
+    'middlewareproj'
 ]
+AUTH_USER_MODEL = 'core.CustomUser'
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False, 
+
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s - %(levelname)s - %(message)s',
+        },
+    },
+
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'request_logs.log',
+            'formatter': 'verbose',
+        },
+    },
+
+    'loggers': {
+        'django.request': { 
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'core.middleware': {  
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -50,6 +87,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware', 
+    'middlewareproj.middleware.LoggingMiddleware',
+    'middlewareproj.middleware.RateLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'auth_practice.urls'
